@@ -1,50 +1,112 @@
-// app.js
 const express = require('express');
+const bodyParser = require('body-parser');
 const axios = require('axios');
 
 const app = express();
 const port = 3000;
 
-const slackWebhookUrl = 'https://hooks.slack.com/services/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';
+// Slack Webhook URL (Slack에서 발급받은 Webhook URL을 여기에 입력하세요)
+const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+app.use(bodyParser.json());
 
-app.use(express.json());
+// 웹훅 엔드포인트 설정
+app.post('/iq-webhook', (req, res) => {
+    const data = req.body;
+    console.log(JSON.stringify(data));
 
-// IQ Server에서 Webhook을 통해 데이터를 받을 엔드포인트
-app.post('/iq-webhook', async (req, res) => {
-    const iqData = req.body;
-    console.log(JSON.stringify(iqData))
-    console.log(JSON.stringify(iqData.applicationEvaluation))
-    // IQ Server에서 받은 데이터를 Slack 메시지 포맷으로 변환
-    const slackMessage = {
-        text: `IQ Server 알림`,
-        blocks: [
-            {
-                type: 'section',
-                text: {
-                    type: 'mrkdwn',
-                    text: `*Application*: ${iqData.applicationEvaluation.application.name}\n*Stage*: ${iqData.applicationEvaluation.stage}\n*영향받는 Component*: ${iqData.applicationEvaluation.affectedComponentCount}개\n*치명적인 Component*: ${iqData.applicationEvaluation.criticalComponentCount}개\n*심각한 Component*: ${iqData.applicationEvaluation.severeComponentCount}개\n*보통 Component*: ${iqData.applicationEvaluation.moderateComponentCount}개\n`
-                }
-            }
-        ]
-    };
-
-    try {
-        // Slack Webhook에 메시지 전송
-        await axios.post(slackWebhookUrl, slackMessage, {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        console.log('Slack으로 메시지를 성공적으로 전송했습니다.');
-        res.status(200).send('Webhook processed.');
-    } catch (error) {
-        console.error('Slack으로 메시지 전송 실패:', error);
-        res.status(500).send('Failed to process webhook.');
+    // 웹훅의 종류별로 처리
+    if (data.applicationEvaluation) {
+        handleApplicationEvaluation(data.applicationEvaluation);
+    } else if (data.licenseOverride) {
+        handleLicenseOverrideManagement(data.licenseOverride);
+    } else if (data.organizations) {
+        handleOrganizationAndApplicationManagement(data.organizations);
+    } else if (data.owner) {
+        handlePolicyManagement(data.owner);
+    } else if (data.securityVulnerabilityOverride) {
+        handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
+    } else if (data.policyAlerts) {
+        handleViolationAlert(data.policyAlerts);
+    } else if (data.addWaiverLink) {
+        handleWaiverRequest(data.addWaiverLink);
+    } else {
+        return res.status(400).json({ status: 'unknown webhook type' });
     }
+
+    res.status(200).json({ status: 'webhook handled successfully' });
 });
 
-// 서버 시작
+// Application Evaluation 웹훅 처리 함수
+function handleApplicationEvaluation(applicationData) {
+    const appName = applicationData.application.name;
+    const evaluationStatus = applicationData.stage;
+
+    const message = `*Application Evaluation Completed*:\n*Application*: ${appName}\n*Status*: ${evaluationStatus}`;
+    sendToSlack(message);
+}
+
+// License Override Management 웹훅 처리 함수
+function handleLicenseOverrideManagement(licenseData) {
+    const licenseId = licenseData.id;
+    const overrideReason = licenseData.comment;
+
+    const message = `*License Override Managed*:\n*License ID*: ${licenseId}\n*comment*: ${overrideReason}`;
+    sendToSlack(message);
+}
+
+// Organization and Application Management 웹훅 처리 함수
+function handleOrganizationAndApplicationManagement(orgAppData) {
+
+    const message = `*조직 변경*`;
+    sendToSlack(message);
+}
+
+// Policy Management 웹훅 처리 함수
+function handlePolicyManagement(policyData) {
+    // const policyName = policyData.policyName;
+    // const policyAction = policyData.policyAction;
+
+    const message = `*정책 변경*`;
+    sendToSlack(message);
+}
+
+// Security Vulnerability Override Management 웹훅 처리 함수
+function handleSecurityVulnerabilityOverrideManagement(securityData) {
+    const vulnerabilityId = securityData.id;
+    const overrideReason = securityData.comment;
+
+    const message = `*Security Vulnerability Override Managed*:\n*Vulnerability ID*: ${vulnerabilityId}\n*Reason*: ${overrideReason}`;
+    sendToSlack(message);
+}
+
+// Violation Alert 웹훅 처리 함수
+function handleViolationAlert(violationData) {
+
+    const message = `*Violation Alert*`;
+
+    sendToSlack(message);
+}
+
+// Waiver Request 웹훅 처리 함수
+function handleWaiverRequest(waiverData) {
+    // const waiverComment = waiverData.comment;
+
+    const message = `*Waiver 요청*:`;
+    sendToSlack(message);
+}
+
+// Slack으로 메시지를 전송하는 함수
+function sendToSlack(message) {
+    axios.post(SLACK_WEBHOOK_URL, {
+        text: message,
+    }).then(response => {
+        console.log('Message sent to Slack');
+    }).catch(error => {
+        console.error('Error sending message to Slack:', error);
+    });
+}
+
+// 서버 실행
 app.listen(port, () => {
     console.log(`IQ Server Webhook listener is running on port ${port}`);
 });
