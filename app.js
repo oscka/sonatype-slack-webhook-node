@@ -6,99 +6,226 @@ const app = express();
 const port = 3000;
 
 // Slack Webhook URL (Slack에서 발급받은 Webhook URL을 여기에 입력하세요)
-const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+const SLACK_WEBHOOK_URL = '';
 app.use(bodyParser.json());
 
 // 웹훅 엔드포인트 설정
 app.post('/iq-webhook', (req, res) => {
+    webhook_id = req.headers['x-nexus-webhook-id'];
     const data = req.body;
-    console.log(JSON.stringify(data));
+    console.log("data == ",data)
+    webhook_id = webhook_id.substring(3);
+    blocks = initBlocks(webhook_id);
 
     // 웹훅의 종류별로 처리
+    if(data.action){
+        handleAction(data);
+    }
     if (data.applicationEvaluation) {
         handleApplicationEvaluation(data.applicationEvaluation);
-    } else if (data.licenseOverride) {
-        handleLicenseOverrideManagement(data.licenseOverride);
-    } else if (data.organizations) {
-        handleOrganizationAndApplicationManagement(data.organizations);
-    } else if (data.owner) {
-        handlePolicyManagement(data.owner);
-    } else if (data.securityVulnerabilityOverride) {
-        handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
-    } else if (data.policyAlerts) {
-        handleViolationAlert(data.policyAlerts);
-    } else if (data.addWaiverLink) {
-        handleWaiverRequest(data.addWaiverLink);
-    } else {
-        return res.status(400).json({ status: 'unknown webhook type' });
     }
+    if (data.licenseOverride) {
+        handleLicenseOverrideManagement(data.licenseOverride);
+    }
+    if (data.organizations) {
+        handleOrganizationAndApplicationManagement(data);
+    }
+    if (data.owner) {
+        handlePolicyManagement(data.owner);
+    }
+    if (data.securityVulnerabilityOverride) {
+        handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
+    }
+    if (data.policyAlerts) {
+        handleViolationAlert(data);
+    } 
+    if (data.addWaiverLink) {
+        handleWaiverRequest(data);
+    } 
 
+    sendToSlack(blocks);
     res.status(200).json({ status: 'webhook handled successfully' });
 });
 
+function initBlocks(){
+    const date = new Date();
+    let day = date.getDate();
+    let month = date.getMonth() + 1;
+    let year = date.getFullYear();
+    let hours = date.getHours();
+    let minutes = date.getMinutes();
+    blocks = [
+        {
+            "type": "header",
+            "text": {
+                    "type": "plain_text",
+                    "text": "Nexus IQ Server Message"
+            }
+        },
+        {
+            "type": "context",
+            "elements": [
+                    {
+                            "text": `${webhook_id} ${year}-${month}-${day} ${hours}:${minutes}`,
+                            "type": "mrkdwn"
+                    }
+            ]
+        },
+        {
+            "type": "divider"
+        }
+    ];
+    return blocks
+}
+
+function addSelection(text){
+    if(text != ''){
+        const selection ={
+            "type": "section",
+            "text": {
+                    "type": "mrkdwn",
+                    "text": `${text}`
+            }
+        };
+        blocks.push(selection);
+    } 
+}
+    
+function addDivider(){
+    const divider = {
+        "type": "divider"
+    };
+    blocks.push(divider)
+}
+
+function handleAction(data){
+    let text = `*Initiator*: ${data.initiator}\n*Action*: ${data.action}\n*Type*: ${data.type}`;    
+    addSelection(text);
+    addDivider();
+}
+
 // Application Evaluation 웹훅 처리 함수
 function handleApplicationEvaluation(applicationData) {
-    const appName = applicationData.application.name;
-    const evaluationStatus = applicationData.stage;
-
-    const message = `*Application Evaluation Completed*:\n*Application*: ${appName}\n*Status*: ${evaluationStatus}`;
-    sendToSlack(message);
+    let text = '';
+    if(applicationData.application.name){
+        text += `*Application*: ${applicationData.application.name}\n`;
+    }
+    text += `*Stage*: ${applicationData.stage}\n*Affected Component*: ${applicationData.affectedComponentCount}개\n*Critical Component*: ${applicationData.criticalComponentCount}개\n*Severe Component*: ${applicationData.severeComponentCount}개\n*Moderate Component*: ${applicationData.moderateComponentCount}개\n`;
+    addSelection(text);
+    addDivider();
 }
 
 // License Override Management 웹훅 처리 함수
 function handleLicenseOverrideManagement(licenseData) {
-    const licenseId = licenseData.id;
-    const overrideReason = licenseData.comment;
-
-    const message = `*License Override Managed*:\n*License ID*: ${licenseId}\n*comment*: ${overrideReason}`;
-    sendToSlack(message);
+    let text = `Status*: ${licenseData.status}\n*Comment*: ${licenseData.overrideReason}`;   
+    Object.keys(licenseData.licenseIds).forEach(function(k) {
+        const value = licenseData.licenseIds[k];
+        text += `*LicenseId*: ${value}\n`
+    });
+    addSelection(text);
+    addDivider();
 }
 
 // Organization and Application Management 웹훅 처리 함수
 function handleOrganizationAndApplicationManagement(orgAppData) {
-
-    const message = `*조직 변경*`;
-    sendToSlack(message);
+    if(orgAppData.organizations){
+        let text = `*• Organizations*: \n`;
+        Object.keys(orgAppData.organizations).forEach(function(k) {
+            const organizations_data = orgAppData.organizations[k];
+            Object.keys(organizations_data).forEach(function(k) {
+                const value = organizations_data[k];
+                if(k == 'id' || k =='organizationId'){
+                    return;
+                }
+                text += `*${k}*: ${value}\n`;
+            });
+        });
+        addSelection(text);
+    }
+    
+    if(orgAppData.applications){
+        let text = `*• Applications*: \n`;
+        Object.keys(orgAppData.applications).forEach(function(k) {
+            const applications_data = orgAppData.applications[k];
+            Object.keys(applications_data).forEach(function(k) {
+                const value = applications_data[k];
+                if(k == 'id' || k == 'organizationId'){
+                    return;
+                }
+                text += `*${k}*: ${value}\n`;
+            });
+        });
+        addSelection(text);
+    }
+    addDivider();
 }
 
 // Policy Management 웹훅 처리 함수
 function handlePolicyManagement(policyData) {
-    // const policyName = policyData.policyName;
-    // const policyAction = policyData.policyAction;
-
-    const message = `*정책 변경*`;
-    sendToSlack(message);
+    let owner_data = `*• Owner*\n*Name*: ${policyData.name} \n *Type*: ${policyData.type} \n `;
+    addSelection(owner_data);
+    let policies_text = `*• Polices*: \n`
+    if(policyData.policies && policyData.policies.length != 0){
+        Object.keys(policyData.policies).forEach(function(k) {
+            const policies_data = policyData.policies[k];
+            Object.keys(policies_data).forEach(function(k) {
+                if(k == 'id'){
+                    return;
+                }
+                const value = policies_data[k];
+                policies_text += `*${k}*: ${value}\n`
+            });
+        });
+        addSelection(policies_text);
+    }
+    addDivider();
 }
 
 // Security Vulnerability Override Management 웹훅 처리 함수
 function handleSecurityVulnerabilityOverrideManagement(securityData) {
-    const vulnerabilityId = securityData.id;
-    const overrideReason = securityData.comment;
-
-    const message = `*Security Vulnerability Override Managed*:\n*Vulnerability ID*: ${vulnerabilityId}\n*Reason*: ${overrideReason}`;
-    sendToSlack(message);
+    let text = `*Source*: ${securityData.source}\n*ReferenceId*: ${securityData.referenceId}\n*Status*: ${securityData.status}\n*Comment*: ${securityData.comment}`;
+    addSelection(text);
+    addDivider();
 }
 
 // Violation Alert 웹훅 처리 함수
 function handleViolationAlert(violationData) {
-
-    const message = `*Violation Alert*`;
-
-    sendToSlack(message);
+    let text = `*initiator*: ${violationData.initiator}\n*Application*: ${violationData.application.name}\n*Outcome* :${violationData.applicationEvaluation.outcome}`;
+    addSelection(text);
+    addDivider();
 }
 
 // Waiver Request 웹훅 처리 함수
 function handleWaiverRequest(waiverData) {
-    // const waiverComment = waiverData.comment;
-
-    const message = `*Waiver 요청*:`;
-    sendToSlack(message);
+    let text = `*Initiator*: ${waiverData.initiator}\n*Comment*: ${waiverData.comment}`;
+    addSelection(text);
+    const element = {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "*Waiver*추가"
+        },
+        "accessory": {                
+            "type": "button",
+            "text": {
+                    "type": "plain_text",
+                    "text": "Add Waiver",
+                    "emoji": true,
+            },
+            "url": waiverData.addWaiverLink
+        }
+    };
+    blocks.push(element);
+    addDivider();
 }
 
 // Slack으로 메시지를 전송하는 함수
-function sendToSlack(message) {
+function sendToSlack() {
+    const headers = {
+      'Content-Type': 'application/json',
+    }
     axios.post(SLACK_WEBHOOK_URL, {
-        text: message,
+        blocks: blocks
     }).then(response => {
         console.log('Message sent to Slack');
     }).catch(error => {
@@ -110,3 +237,5 @@ function sendToSlack(message) {
 app.listen(port, () => {
     console.log(`IQ Server Webhook listener is running on port ${port}`);
 });
+    
+
