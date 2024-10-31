@@ -203,7 +203,7 @@ function handleWaiverRequest(waiverData) {
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": "*Waiver*추가"
+            "text": "Waiver추가"
         },
         "accessory": {                
             "type": "button",
