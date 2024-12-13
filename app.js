@@ -6,7 +6,9 @@ const app = express();
 const port = 3000;
 
 // Slack Webhook URL (Slack에서 발급받은 Webhook URL을 여기에 입력하세요)
-const SLACK_WEBHOOK_URL = '';
+const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+const SLACK_WEBHOOK_URL2 = 'https://hooks.slack.com/services/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';
+
 app.use(bodyParser.json());
 
 // 웹훅 엔드포인트 설정
@@ -20,30 +22,38 @@ app.post('/iq-webhook', (req, res) => {
     // 웹훅의 종류별로 처리
     if(data.action){
         handleAction(data);
+        sendToSlack2(blocks);
     }
     if (data.applicationEvaluation) {
         handleApplicationEvaluation(data.applicationEvaluation);
+        sendToSlack(blocks);
     }
     if (data.licenseOverride) {
         handleLicenseOverrideManagement(data.licenseOverride);
+        sendToSlack(blocks);
     }
     if (data.organizations) {
         handleOrganizationAndApplicationManagement(data);
+        sendToSlack(blocks);
     }
     if (data.owner) {
         handlePolicyManagement(data.owner);
+        sendToSlack(blocks);
     }
     if (data.securityVulnerabilityOverride) {
         handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
+        sendToSlack(blocks);
     }
     if (data.policyAlerts) {
         handleViolationAlert(data);
+        sendToSlack(blocks);
     } 
     if (data.addWaiverLink) {
         handleWaiverRequest(data);
+        sendToSlack(blocks);
     } 
 
-    sendToSlack(blocks);
+
     res.status(200).json({ status: 'webhook handled successfully' });
 });
 
@@ -225,6 +235,18 @@ function sendToSlack() {
       'Content-Type': 'application/json',
     }
     axios.post(SLACK_WEBHOOK_URL, {
+        blocks: blocks
+    }).then(response => {
+        console.log('Message sent to Slack');
+    }).catch(error => {
+        console.error('Error sending message to Slack:', error);
+    });
+}
+function sendToSlack2() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+    axios.post(SLACK_WEBHOOK_URL2, {
         blocks: blocks
     }).then(response => {
         console.log('Message sent to Slack');
