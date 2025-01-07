@@ -1,8 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+const { WebClient } = require('@slack/web-api');
+
+// Slack Bot Token
+const botToken = 'xoxb-7792407487649-8247922991157-SP1Sjdtg0VuT0oJCqoK9lNLR';
+const slackClient = new WebClient(botToken);
 
 const app = express();
+
 const port = 3000;
 
 // Slack Webhook URL (Slack에서 발급받은 Webhook URL을 여기에 입력하세요)
@@ -23,9 +29,18 @@ app.post('/iq-webhook', (req, res) => {
     if(data.action){
         handleAction(data);
         sendToSlack2(blocks);
+
     }
     if (data.applicationEvaluation) {
         handleApplicationEvaluation(data.applicationEvaluation);
+        slackClient.chat.postMessage({
+            channel: "#test",
+            text: "Application = " +data.applicationEvaluation.application.name  + `\n*Stage*: ${data.applicationEvaluation.stage}\n*Affected Component*: ${data.applicationEvaluation.affectedComponentCount}개\n*Critical Component*: ${data.applicationEvaluation.criticalComponentCount}개\n*Severe Component*: ${data.applicationEvaluation.severeComponentCount}개\n*Moderate Component*: ${data.applicationEvaluation.moderateComponentCount}개\n`,
+        })
+        slackClient.chat.postMessage({
+            channel: "#test2",
+            text: "Application = " +data.applicationEvaluation.application.name  + `\n*Stage*: ${data.applicationEvaluation.stage}\n*Affected Component*: ${data.applicationEvaluation.affectedComponentCount}개\n*Critical Component*: ${data.applicationEvaluation.criticalComponentCount}개\n*Severe Component*: ${data.applicationEvaluation.severeComponentCount}개\n*Moderate Component*: ${data.applicationEvaluation.moderateComponentCount}개\n`,
+        })
         sendToSlack(blocks);
     }
     if (data.licenseOverride) {
