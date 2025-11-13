@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iq-webhook-listener
+  namespace: iq-webhook-listener
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iq-webhook-listener
+  template:
+    metadata:
+      labels:
+        app: iq-webhook-listener
+    spec:
+      containers:
+      - name: iq-webhook-listener
+        image:  junhanosc/iqserver-webhook-listener:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: SLACK_WEBHOOK_URL
+          valueFrom:
+            secretKeyRef:
+              name: iq-webhook-secret
+              key: SLACK_WEBHOOK_URL
+        - name: SLACK_WEBHOOK_URL2
+          valueFrom:
+            secretKeyRef:
+              name: iq-webhook-secret
+              key: SLACK_WEBHOOK_URL2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iq-webhook-listener
+  namespace: iq-webhook-listener
+spec:
+  selector:
+    app: iq-webhook-listener
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  type: ClusterIP

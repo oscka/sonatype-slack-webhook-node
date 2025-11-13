@@ -8,8 +8,13 @@ const app = express();
 const port = 3000;
 
 // Slack Webhook URL (Slack에서 발급받은 Webhook URL을 여기에 입력하세요)
-const SLACK_WEBHOOK_URL = '';
-const SLACK_WEBHOOK_URL2 = '';
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const SLACK_WEBHOOK_URL2 = process.env.SLACK_WEBHOOK_URL2;
+
+if (!SLACK_WEBHOOK_URL || !SLACK_WEBHOOK_URL2) {
+    console.error("❌ Slack webhook URLs are not set! Please check environment variables.");
+    process.exit(1);
+}
 
 app.use(bodyParser.json());
 
@@ -30,30 +35,37 @@ app.post('/iq-webhook', (req, res) => {
     if (data.applicationEvaluation) {
         handleApplicationEvaluation(data.applicationEvaluation);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     }
     if (data.licenseOverride) {
         handleLicenseOverrideManagement(data.licenseOverride);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     }
     if (data.organizations) {
         handleOrganizationAndApplicationManagement(data);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     }
     if (data.owner) {
         handlePolicyManagement(data.owner);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     }
     if (data.securityVulnerabilityOverride) {
         handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     }
     if (data.policyAlerts) {
         handleViolationAlert(data);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     } 
     if (data.addWaiverLink) {
         handleWaiverRequest(data);
         sendToSlack(blocks);
+        sendToSlack2(blocks);
     } 
 
 
