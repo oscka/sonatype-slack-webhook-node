@@ -15,20 +15,45 @@ spec:
     spec:
       containers:
       - name: iq-webhook-listener
-        image:  junhanosc/iqserver-webhook-listener:latest
+        image: your-registry/your-image:your-tag
         ports:
         - containerPort: 3000
         env:
-        - name: SLACK_WEBHOOK_URL
+        - name: MESSENGER_URL
           valueFrom:
             secretKeyRef:
               name: iq-webhook-secret
-              key: SLACK_WEBHOOK_URL
-        - name: SLACK_WEBHOOK_URL2
+              key: MESSENGER_URL
+
+        - name: SRV_CODE
           valueFrom:
             secretKeyRef:
               name: iq-webhook-secret
-              key: SLACK_WEBHOOK_URL2
+              key: SRV_CODE
+
+        - name: RECIPIENT
+          valueFrom:
+            secretKeyRef:
+              name: iq-webhook-secret
+              key: RECIPIENT
+
+        - name: MESSAGE_TITLE
+          valueFrom:
+            secretKeyRef:
+              name: iq-webhook-secret
+              key: MESSAGE_TITLE
+
+        - name: SAVEOPTION
+          valueFrom:
+            secretKeyRef:
+              name: iq-webhook-secret
+              key: SAVEOPTION
+
+        - name: SENDER_ALIAS
+          valueFrom:
+            secretKeyRef:
+              name: iq-webhook-secret
+              key: SENDER_ALIAS
 ---
 apiVersion: v1
 kind: Service

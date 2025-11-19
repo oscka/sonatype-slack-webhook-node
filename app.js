@@ -1,18 +1,21 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
-const { WebClient } = require('@slack/web-api');
 
 const app = express();
-
 const port = 3000;
 
-// Slack Webhook URL (Slack에서 발급받은 Webhook URL을 여기에 입력하세요)
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
-const SLACK_WEBHOOK_URL2 = process.env.SLACK_WEBHOOK_URL2;
+const {
+    MESSENGER_URL,
+    SRV_CODE,
+    RECIPIENT,
+    MESSAGE_TITLE,
+    SENDER_ALIAS,
+    SAVEOPTION
+} = process.env;
 
-if (!SLACK_WEBHOOK_URL || !SLACK_WEBHOOK_URL2) {
-    console.error("❌ Slack webhook URLs are not set! Please check environment variables.");
+if (!MESSENGER_URL) {
+    console.error("❌ Messenger URL is not set! Please check environment variables.");
     process.exit(1);
 }
 
@@ -29,43 +32,35 @@ app.post('/iq-webhook', (req, res) => {
     // 웹훅의 종류별로 처리
     if(data.action){
         handleAction(data);
-        sendToSlack2(blocks);
 
     }
     if (data.applicationEvaluation) {
         handleApplicationEvaluation(data.applicationEvaluation);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     }
     if (data.licenseOverride) {
         handleLicenseOverrideManagement(data.licenseOverride);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     }
     if (data.organizations) {
         handleOrganizationAndApplicationManagement(data);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     }
     if (data.owner) {
         handlePolicyManagement(data.owner);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     }
     if (data.securityVulnerabilityOverride) {
         handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     }
     if (data.policyAlerts) {
         handleViolationAlert(data);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     } 
     if (data.addWaiverLink) {
         handleWaiverRequest(data);
-        sendToSlack(blocks);
-        sendToSlack2(blocks);
+        sendToMessenger(blocks);
     } 
 
 
@@ -244,31 +239,35 @@ function handleWaiverRequest(waiverData) {
     addDivider();
 }
 
-// Slack으로 메시지를 전송하는 함수
-function sendToSlack() {
-    const headers = {
-      'Content-Type': 'application/json',
-    }
-    axios.post(SLACK_WEBHOOK_URL, {
-        blocks: blocks
-    }).then(response => {
-        console.log('Message sent to Slack');
-    }).catch(error => {
-        console.error('Error sending message to Slack:', error);
-    });
+// Messenger로 메시지를 전송하는 함수
+const qs = require('qs');
+
+function sendToMessenger(blocks) {
+    const data = {
+        SRV_CODE: SRV_CODE,
+        RECIPIENT: RECIPIENT,
+        SEND: "Y",
+        TITLE: MESSAGE_TITLE,
+        BODY: JSON.stringify(blocks),
+        SAVEOPTION: SAVEOPTION,
+        SENDER_ALIAS: SENDER_ALIAS
+    };
+    console.log("Messenger Request Data:", data);
+    console.log("Form-urlencoded data:", qs.stringify(data));
+
+    axios.post(
+        MESSENGER_URL,
+        qs.stringify(data),  // form-urlencoded 변환
+        {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            }
+        }
+    )
+        .then(() => console.log("Message sent to internal messenger"))
+        .catch(err => console.error("Error:", err));
 }
-function sendToSlack2() {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-    axios.post(SLACK_WEBHOOK_URL2, {
-        blocks: blocks
-    }).then(response => {
-        console.log('Message sent to Slack');
-    }).catch(error => {
-        console.error('Error sending message to Slack:', error);
-    });
-}
+
 
 // 서버 실행
 app.listen(port, () => {
