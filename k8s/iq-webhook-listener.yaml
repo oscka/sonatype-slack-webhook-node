@@ -37,12 +37,6 @@ spec:
               name: iq-webhook-secret
               key: RECIPIENT
 
-        - name: MESSAGE_TITLE
-          valueFrom:
-            secretKeyRef:
-              name: iq-webhook-secret
-              key: MESSAGE_TITLE
-
         - name: SAVEOPTION
           valueFrom:
             secretKeyRef:
