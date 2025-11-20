@@ -241,17 +241,32 @@ function handleWaiverRequest(waiverData) {
 
 // Messenger로 메시지를 전송하는 함수
 const qs = require('qs');
-
 function sendToMessenger(blocks) {
+    const titleText = blocks.find(b => b.type === 'context')?.elements?.[0]?.text;
+    const bodyText = blocks.map(block => {
+        switch (block.type) {
+            case 'header':
+                return block.text?.text || '';
+            case 'context':
+                return block.elements?.map(el => el.text || '').join(' ') || '';
+            case 'section':
+                return block.text?.text || '';
+            case 'divider':
+                return '--------------------------------';
+            default:
+                return '';
+        }
+    }).filter(Boolean).join('\n');
     const data = {
         SRV_CODE: SRV_CODE,
         RECIPIENT: RECIPIENT,
         SEND: "Y",
-        TITLE: MESSAGE_TITLE,
-        BODY: JSON.stringify(blocks),
+        TITLE: titleText,
+        BODY: bodyText,
         SAVEOPTION: SAVEOPTION,
         SENDER_ALIAS: SENDER_ALIAS
     };
+    console.log("blocks:",blocks);
     console.log("Messenger Request Data:", data);
     console.log("Form-urlencoded data:", qs.stringify(data));
 
@@ -273,5 +288,3 @@ function sendToMessenger(blocks) {
 app.listen(port, () => {
     console.log(`IQ Server Webhook listener is running on port ${port}`);
 });
-    
-
