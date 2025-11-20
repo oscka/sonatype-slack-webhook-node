@@ -1,0 +1,28 @@
+replicaCount: 1
+
+namespace: iq-webhook-listener
+
+image:
+  repository: junhanosc/iqserver-webhook-listener
+  tag: test
+  pullPolicy: IfNotPresent
+
+service:
+  port: 3000
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  host: webhook.192.168.41.90.sslip.io
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: "/"
+  path: /
+  pathType: Prefix
+
+secret:
+  MESSENGER_URL: "http://your-messenger-url"
+  SRV_CODE: "SRV_CODE"
+  RECIPIENT: "RECEIVER"
+  SAVEOPTION: "N"
+  SENDER_ALIAS: "SYSTEM"

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "iq-webhook-listener.fullname" . }}
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "iq-webhook-listener.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "iq-webhook-listener.name" . }}
+    spec:
+      containers:
+      - name: {{ include "iq-webhook-listener.name" . }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        env:
+        - name: MESSENGER_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: MESSENGER_URL
+        - name: SRV_CODE
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: SRV_CODE
+        - name: RECIPIENT
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: RECIPIENT
+        - name: SAVEOPTION
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: SAVEOPTION
+        - name: SENDER_ALIAS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: SENDER_ALIAS

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: iq-webhook-listener
+description: A Helm chart for IQ Webhook Listener
+version: 0.1.0
+appVersion: "1.0.0"
