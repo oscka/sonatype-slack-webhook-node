@@ -9,13 +9,12 @@ const {
     MESSENGER_URL,
     SRV_CODE,
     RECIPIENT,
-    MESSAGE_TITLE,
     SENDER_ALIAS,
     SAVEOPTION
 } = process.env;
 
 if (!MESSENGER_URL) {
-    console.error("❌ Messenger URL is not set! Please check environment variables.");
+    console.error("Messenger URL is not set. Please check environment variables.");
     process.exit(1);
 }
 
@@ -40,10 +39,6 @@ app.post('/iq-webhook', (req, res) => {
     }
     if (data.licenseOverride) {
         handleLicenseOverrideManagement(data.licenseOverride);
-        sendToMessenger(blocks);
-    }
-    if (data.organizations) {
-        handleOrganizationAndApplicationManagement(data);
         sendToMessenger(blocks);
     }
     if (data.owner) {
@@ -146,39 +141,6 @@ function handleLicenseOverrideManagement(licenseData) {
     addDivider();
 }
 
-// Organization and Application Management 웹훅 처리 함수
-function handleOrganizationAndApplicationManagement(orgAppData) {
-    if(orgAppData.organizations){
-        let text = `*• Organizations*: \n`;
-        Object.keys(orgAppData.organizations).forEach(function(k) {
-            const organizations_data = orgAppData.organizations[k];
-            Object.keys(organizations_data).forEach(function(k) {
-                const value = organizations_data[k];
-                if(k == 'id' || k =='organizationId'){
-                    return;
-                }
-                text += `*${k}*: ${value}\n`;
-            });
-        });
-        addSelection(text);
-    }
-    
-    if(orgAppData.applications){
-        let text = `*• Applications*: \n`;
-        Object.keys(orgAppData.applications).forEach(function(k) {
-            const applications_data = orgAppData.applications[k];
-            Object.keys(applications_data).forEach(function(k) {
-                const value = applications_data[k];
-                if(k == 'id' || k == 'organizationId'){
-                    return;
-                }
-                text += `*${k}*: ${value}\n`;
-            });
-        });
-        addSelection(text);
-    }
-    addDivider();
-}
 
 // Policy Management 웹훅 처리 함수
 function handlePolicyManagement(policyData) {
