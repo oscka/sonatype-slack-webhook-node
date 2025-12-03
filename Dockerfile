@@ -1,5 +1,5 @@
-# Node.js 18 기반의 경량 Alpine 이미지 사용
-FROM node:18-alpine
+# Node.js 24 기반의 경량 Alpine 이미지 사용
+FROM node:24-alpine
 
 # 앱 디렉터리 설정
 WORKDIR /usr/src/app
