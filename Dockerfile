@@ -11,6 +11,9 @@ RUN npm install --production
 # 소스 복사
 COPY . .
 
+# 비루트 사용자로 변경
+USER node
+
 # 앱이 사용하는 포트
 EXPOSE 3000
 
