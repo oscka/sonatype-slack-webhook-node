@@ -200,7 +200,26 @@ function handleWaiverRequest(waiverData) {
     blocks.push(element);
     addDivider();
 }
+//로그 함수
+function logSuccess(code, message, detail = {}) {
+    console.log(JSON.stringify({
+        result: "SUCCESS",
+        code,
+        message,
+        component: "iq-webhook",
+        detail
+    }));
+}
 
+function logFail(code, message, detail = {}) {
+    console.error(JSON.stringify({
+        result: "FAIL",
+        code,
+        message,
+        component: "iq-webhook",
+        detail
+    }));
+}
 // Messenger로 메시지를 전송하는 함수
 const qs = require('qs');
 function sendToMessenger(blocks) {
@@ -241,8 +260,29 @@ function sendToMessenger(blocks) {
             }
         }
     )
-        .then(() => console.log("Message sent to internal messenger"))
-        .catch(err => console.error("Error:", err));
+    .then(response  => {
+        logSuccess(
+            "S001",
+            "Message sent to messenger",
+            {
+                httpStatus: response.status,
+                statusText: response.statusText
+            }
+        );
+    })
+    .catch(err => {
+        logFail(
+            "E001",
+            "Failed to send message to messenger",
+            {
+                httpStatus: err.response?.status ?? "NO_RESPONSE",
+                statusText: err.response?.statusText,
+                error: err.message
+            }
+        );
+        // 여기서 throw 할지 말지는 정책 선택
+        // throw err;
+    });
 }
 
 
