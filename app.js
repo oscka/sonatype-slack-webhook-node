@@ -24,12 +24,12 @@ app.use(bodyParser.json());
 app.post('/iq-webhook', (req, res) => {
     webhook_id = req.headers['x-nexus-webhook-id'];
     const data = req.body;
-    console.log("data == ",data)
+    console.log("data == ", data)
     webhook_id = webhook_id.substring(3);
     blocks = initBlocks(webhook_id);
 
     // 웹훅의 종류별로 처리
-    if(data.action){
+    if (data.action) {
         handleAction(data);
 
     }
@@ -52,17 +52,17 @@ app.post('/iq-webhook', (req, res) => {
     if (data.policyAlerts) {
         handleViolationAlert(data);
         sendToMessenger(blocks);
-    } 
+    }
     if (data.addWaiverLink) {
         handleWaiverRequest(data);
         sendToMessenger(blocks);
-    } 
+    }
 
 
     res.status(200).json({ status: 'webhook handled successfully' });
 });
 
-function initBlocks(){
+function initBlocks() {
     const date = new Date();
     let day = date.getDate();
     let month = date.getMonth() + 1;
@@ -73,17 +73,17 @@ function initBlocks(){
         {
             "type": "header",
             "text": {
-                    "type": "plain_text",
-                    "text": "Nexus IQ Server Message"
+                "type": "plain_text",
+                "text": "Nexus IQ Server Message"
             }
         },
         {
             "type": "context",
             "elements": [
-                    {
-                            "text": `${webhook_id} ${year}-${month}-${day} ${hours}:${minutes}`,
-                            "type": "mrkdwn"
-                    }
+                {
+                    "text": `${webhook_id} ${year}-${month}-${day} ${hours}:${minutes}`,
+                    "type": "mrkdwn"
+                }
             ]
         },
         {
@@ -93,28 +93,28 @@ function initBlocks(){
     return blocks
 }
 
-function addSelection(text){
-    if(text != ''){
-        const selection ={
+function addSelection(text) {
+    if (text != '') {
+        const selection = {
             "type": "section",
             "text": {
-                    "type": "mrkdwn",
-                    "text": `${text}`
+                "type": "mrkdwn",
+                "text": `${text}`
             }
         };
         blocks.push(selection);
-    } 
+    }
 }
-    
-function addDivider(){
+
+function addDivider() {
     const divider = {
         "type": "divider"
     };
     blocks.push(divider)
 }
 
-function handleAction(data){
-    let text = `*Initiator*: ${data.initiator}\n*Action*: ${data.action}\n*Type*: ${data.type}`;    
+function handleAction(data) {
+    let text = `*Initiator*: ${data.initiator}\n*Action*: ${data.action}\n*Type*: ${data.type}`;
     addSelection(text);
     addDivider();
 }
@@ -122,7 +122,7 @@ function handleAction(data){
 // Application Evaluation 웹훅 처리 함수
 function handleApplicationEvaluation(applicationData) {
     let text = '';
-    if(applicationData.application.name){
+    if (applicationData.application.name) {
         text += `*Application*: ${applicationData.application.name}\n`;
     }
     text += `*Stage*: ${applicationData.stage}\n*Affected Component*: ${applicationData.affectedComponentCount}개\n*Critical Component*: ${applicationData.criticalComponentCount}개\n*Severe Component*: ${applicationData.severeComponentCount}개\n*Moderate Component*: ${applicationData.moderateComponentCount}개\n`;
@@ -132,8 +132,8 @@ function handleApplicationEvaluation(applicationData) {
 
 // License Override Management 웹훅 처리 함수
 function handleLicenseOverrideManagement(licenseData) {
-    let text = `Status*: ${licenseData.status}\n*Comment*: ${licenseData.overrideReason}`;   
-    Object.keys(licenseData.licenseIds).forEach(function(k) {
+    let text = `Status*: ${licenseData.status}\n*Comment*: ${licenseData.overrideReason}`;
+    Object.keys(licenseData.licenseIds).forEach(function (k) {
         const value = licenseData.licenseIds[k];
         text += `*LicenseId*: ${value}\n`
     });
@@ -147,11 +147,11 @@ function handlePolicyManagement(policyData) {
     let owner_data = `*• Owner*\n*Name*: ${policyData.name} \n *Type*: ${policyData.type} \n `;
     addSelection(owner_data);
     let policies_text = `*• Polices*: \n`
-    if(policyData.policies && policyData.policies.length != 0){
-        Object.keys(policyData.policies).forEach(function(k) {
+    if (policyData.policies && policyData.policies.length != 0) {
+        Object.keys(policyData.policies).forEach(function (k) {
             const policies_data = policyData.policies[k];
-            Object.keys(policies_data).forEach(function(k) {
-                if(k == 'id'){
+            Object.keys(policies_data).forEach(function (k) {
+                if (k == 'id') {
                     return;
                 }
                 const value = policies_data[k];
@@ -187,12 +187,12 @@ function handleWaiverRequest(waiverData) {
             "type": "mrkdwn",
             "text": "Waiver추가"
         },
-        "accessory": {                
+        "accessory": {
             "type": "button",
             "text": {
-                    "type": "plain_text",
-                    "text": "Add Waiver",
-                    "emoji": true,
+                "type": "plain_text",
+                "text": "Add Waiver",
+                "emoji": true,
             },
             "url": waiverData.addWaiverLink
         }
@@ -247,7 +247,7 @@ function sendToMessenger(blocks) {
         SAVEOPTION: SAVEOPTION,
         SENDER_ALIAS: SENDER_ALIAS
     };
-    console.log("blocks:",blocks);
+    console.log("blocks:", blocks);
     console.log("Messenger Request Data:", data);
     console.log("Form-urlencoded data:", qs.stringify(data));
 
@@ -260,29 +260,44 @@ function sendToMessenger(blocks) {
             }
         }
     )
-    .then(response  => {
-        logSuccess(
-            "S001",
-            "Message sent to messenger",
-            {
-                httpStatus: response.status,
-                statusText: response.statusText
-            }
-        );
-    })
-    .catch(err => {
-        logFail(
-            "E001",
-            "Failed to send message to messenger",
-            {
-                httpStatus: err.response?.status ?? "NO_RESPONSE",
-                statusText: err.response?.statusText,
-                error: err.message
-            }
-        );
-        // 여기서 throw 할지 말지는 정책 선택
-        // throw err;
-    });
+        .then(response => {
+            logSuccess(
+                "S001",
+                "Message sent to messenger",
+                {
+                    httpStatus: response.status,
+                    statusText: response.statusText,
+                    data: response.data,
+                    headers: response.headers,
+                    config: {
+                        method: response.config?.method,
+                        url: response.config?.url,
+                        timeout: response.config?.timeout
+                    }
+                }
+            );
+        })
+        .catch(err => {
+            logFail(
+                "E001",
+                "Failed to send message to messenger",
+                {
+                    httpStatus: err.response?.status ?? "NO_RESPONSE",
+                    statusText: err.response?.statusText,
+                    data: err.response?.data,
+                    headers: err.response?.headers,
+                    config: {
+                        method: err.config?.method,
+                        url: err.config?.url,
+                        timeout: err.config?.timeout
+                    },
+                    isAxiosError: err.isAxiosError ?? false,
+                    error: err.message
+                }
+            );
+            // 여기서 throw 할지 말지는 정책 선택
+            // throw err;
+        });
 }
 
 
