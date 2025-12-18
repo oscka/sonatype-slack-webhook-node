@@ -25,23 +25,45 @@ spec:
             secretKeyRef:
               name: {{ include "iq-webhook-listener.fullname" . }}-secret
               key: MESSENGER_URL
+
         - name: SRV_CODE
           valueFrom:
             secretKeyRef:
               name: {{ include "iq-webhook-listener.fullname" . }}-secret
               key: SRV_CODE
-        - name: RECIPIENT
+
+        - name: RECIPIENT_VULNERABILITY
           valueFrom:
             secretKeyRef:
               name: {{ include "iq-webhook-listener.fullname" . }}-secret
-              key: RECIPIENT
+              key: RECIPIENT_VULNERABILITY
+
+        - name: RECIPIENT_LICENSE
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: RECIPIENT_LICENSE
+
+        - name: RECIPIENT_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: RECIPIENT_ADMIN
+
         - name: SAVEOPTION
           valueFrom:
             secretKeyRef:
               name: {{ include "iq-webhook-listener.fullname" . }}-secret
               key: SAVEOPTION
+
         - name: SENDER_ALIAS
           valueFrom:
             secretKeyRef:
               name: {{ include "iq-webhook-listener.fullname" . }}-secret
               key: SENDER_ALIAS
+
+        - name: SEND
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "iq-webhook-listener.fullname" . }}-secret
+              key: SEND

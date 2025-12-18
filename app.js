@@ -8,7 +8,9 @@ const port = 3000;
 const {
     MESSENGER_URL,
     SRV_CODE,
-    RECIPIENT,
+    RECIPIENT_VULNERABILITY,
+    RECIPIENT_LICENSE,
+    RECIPIENT_ADMIN,
     SENDER_ALIAS,
     SAVEOPTION,
     SEND
@@ -34,29 +36,39 @@ app.post('/iq-webhook', (req, res) => {
         handleAction(data);
 
     }
+    let eventType = 'ADMIN'; // 기본 관리자
+
     if (data.applicationEvaluation) {
+        eventType = 'APPLICATION_EVALUATION';
         handleApplicationEvaluation(data.applicationEvaluation);
-        sendToMessenger(blocks);
+        sendToMessenger(blocks, eventType);
     }
+
+    if (data.policyAlerts) {
+        eventType = 'VIOLATION_ALERT';
+        handleViolationAlert(data);
+        sendToMessenger(blocks, eventType);
+    }
+
+    // 나머지 이벤트
     if (data.licenseOverride) {
         handleLicenseOverrideManagement(data.licenseOverride);
-        sendToMessenger(blocks);
+        sendToMessenger(blocks, eventType);
     }
+
     if (data.owner) {
         handlePolicyManagement(data.owner);
-        sendToMessenger(blocks);
+        sendToMessenger(blocks, eventType);
     }
+
     if (data.securityVulnerabilityOverride) {
         handleSecurityVulnerabilityOverrideManagement(data.securityVulnerabilityOverride);
-        sendToMessenger(blocks);
+        sendToMessenger(blocks, eventType);
     }
-    if (data.policyAlerts) {
-        handleViolationAlert(data);
-        sendToMessenger(blocks);
-    }
+
     if (data.addWaiverLink) {
         handleWaiverRequest(data);
-        sendToMessenger(blocks);
+        sendToMessenger(blocks, eventType);
     }
 
 
@@ -201,6 +213,23 @@ function handleWaiverRequest(waiverData) {
     blocks.push(element);
     addDivider();
 }
+//수신인 선택 함수
+function getRecipientByEvent(eventType) {
+    // APPLICATION EVALUATION / VIOLATION ALERT
+    if (
+        eventType === 'APPLICATION_EVALUATION' ||
+        eventType === 'VIOLATION_ALERT'
+    ) {
+        // 취약점 + 라이센스
+        return [RECIPIENT_VULNERABILITY, RECIPIENT_LICENSE]
+            .filter(Boolean)
+            .join(',');
+    }
+
+    // 나머지는 관리자
+    return RECIPIENT_ADMIN;
+}
+
 //로그 함수
 function logSuccess(code, message, detail = {}) {
     console.log(JSON.stringify({
@@ -223,7 +252,9 @@ function logFail(code, message, detail = {}) {
 }
 // Messenger로 메시지를 전송하는 함수
 const qs = require('qs');
-function sendToMessenger(blocks) {
+function sendToMessenger(blocks, eventType) {
+    const recipient = getRecipientByEvent(eventType);
+
     const titleText = blocks.find(b => b.type === 'context')?.elements?.[0]?.text;
     const bodyText = blocks.map(block => {
         switch (block.type) {
@@ -241,7 +272,7 @@ function sendToMessenger(blocks) {
     }).filter(Boolean).join('\n');
     const data = {
         SRV_CODE: SRV_CODE,
-        RECIPIENT: RECIPIENT,
+        RECIPIENT: recipient,
         SEND: SEND,
         TITLE: titleText,
         BODY: bodyText,
