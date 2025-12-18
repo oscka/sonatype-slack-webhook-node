@@ -10,7 +10,8 @@ const {
     SRV_CODE,
     RECIPIENT,
     SENDER_ALIAS,
-    SAVEOPTION
+    SAVEOPTION,
+    SEND
 } = process.env;
 
 if (!MESSENGER_URL) {
@@ -245,7 +246,8 @@ function sendToMessenger(blocks) {
         TITLE: titleText,
         BODY: bodyText,
         SAVEOPTION: SAVEOPTION,
-        SENDER_ALIAS: SENDER_ALIAS
+        SENDER_ALIAS: SENDER_ALIAS,
+        SEND: SEND
     };
     console.log("blocks:", blocks);
     console.log("Messenger Request Data:", data);
